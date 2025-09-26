@@ -12,9 +12,10 @@ export interface AudioMessage extends RealtimeMessage {
 }
 
 export interface TranscriptMessage extends RealtimeMessage {
-  type: 'transcript';
+  type: 'transcript' | 'transcript.user' | 'transcript.assistant';
   text: string;
-  role: 'user' | 'assistant';
+  role?: 'user' | 'assistant';
+  isFinal?: boolean;
 }
 
 export interface ConversationMessage extends RealtimeMessage {
@@ -49,12 +50,17 @@ export interface ErrorMessage extends RealtimeMessage {
   };
 }
 
+export interface ConnectionMessage extends RealtimeMessage {
+  type: 'connection.established';
+}
+
 export type WebSocketMessage = 
   | AudioMessage
   | TranscriptMessage
   | ConversationMessage
   | SessionMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | ConnectionMessage;
 
 // WebSocket接続状態
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';

@@ -97,11 +97,16 @@ export const useWebSocket = ({
               }
               break;
 
-            case 'transcript':
+            case 'transcript.user':
+            case 'transcript.assistant':
               const transcriptMsg = message as TranscriptMessage;
               if (onTranscript) {
                 onTranscript(transcriptMsg);
               }
+              break;
+
+            case 'connection.established':
+              console.log('WebSocket connection established:', message);
               break;
 
             case 'error':
@@ -113,6 +118,7 @@ export const useWebSocket = ({
               break;
 
             default:
+              console.log('Unknown message type received:', message);
               if (onMessage) {
                 onMessage(message);
               }
