@@ -1,0 +1,43 @@
+{
+    "files.autoSave": "onFocusChange",
+    "files.exclude": {
+        "**/.git": true,
+        "**/.coverage": true,
+        "**/.mypy_cache": true,
+        "**/.pytest_cache": true,
+        "**/.ruff_cache": true,
+        "**/.terraform": true,
+        "**/.terraform.lock.hcl": true,
+        "**/.infracost": true
+    },
+    "markdownlint.config": {
+        "MD024": false,
+        "MD053": false
+    },
+    "github.copilot.enable": {
+        "markdown": true
+    },
+    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+    "python.analysis.extraPaths": [
+        "backend/src",
+        "backend/tests",
+        "${workspaceFolder}/backend/.venv/lib/python3.12/site-packages",
+    ],
+    "python.analysis.diagnosticsSource": "Pylance",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.aiCodeActions": {
+        "implementAbstractClasses": true,
+        "generateSymbol": true,
+        "convertFormatString": true
+    },
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "file": ".github/instructions/copilot-commit-message-instructions.md"
+        },
+    ],
+    "github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
+        {
+            "file": ".github/instructions/pull-request-description-instructions.md"
+        }
+    ]
+}

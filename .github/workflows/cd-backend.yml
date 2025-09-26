@@ -1,0 +1,212 @@
+name: CD Backend
+
+on:
+  push:
+    branches:
+      - main # Production cd
+      - develop # Development cd
+    paths:
+      - "backend/**"
+      - ".github/workflows/cd-backend.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deploy environment"
+        type: choice
+        required: true
+        default: "dev"
+        options:
+          - dev
+          - prod
+
+env:
+  AWS_REGION: ap-northeast-1
+  PROJECT_NAME: ai-reception
+
+jobs:
+  determine-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      ecr_repository: ${{ steps.set-env.outputs.ecr_repository }}
+      cluster_name: ${{ steps.set-env.outputs.cluster_name }}
+      service_name: ${{ steps.set-env.outputs.service_name }}
+      container_name: ${{ steps.set-env.outputs.container_name }}
+    steps:
+      - name: Set environment based on branch
+        id: set-env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "ecr_repository=ai-reception-prod" >> $GITHUB_OUTPUT
+            echo "cluster_name=ai-reception-prod-cluster" >> $GITHUB_OUTPUT
+            echo "service_name=ai-reception-prod-backend-api-service" >> $GITHUB_OUTPUT
+            echo "container_name=ai-reception-prod-backend-api" >> $GITHUB_OUTPUT
+            echo "Production environment selected"
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ] || [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "ecr_repository=ai-reception-dev" >> $GITHUB_OUTPUT
+            echo "cluster_name=ai-reception-dev-cluster" >> $GITHUB_OUTPUT
+            echo "service_name=ai-reception-dev-backend-api-service" >> $GITHUB_OUTPUT
+            echo "container_name=ai-reception-dev-backend-api" >> $GITHUB_OUTPUT
+            echo "Development environment selected"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.environment }}" = "prod" ]; then
+              echo "environment=prod" >> $GITHUB_OUTPUT
+              echo "ecr_repository=ai-reception-prod" >> $GITHUB_OUTPUT
+              echo "cluster_name=ai-reception-prod-cluster" >> $GITHUB_OUTPUT
+              echo "service_name=ai-reception-prod-backend-api-service" >> $GITHUB_OUTPUT
+              echo "container_name=ai-reception-prod-backend-api" >> $GITHUB_OUTPUT
+              echo "Manual deployment to prod environment"
+            else
+              echo "environment=dev" >> $GITHUB_OUTPUT
+              echo "ecr_repository=ai-reception-dev" >> $GITHUB_OUTPUT
+              echo "cluster_name=ai-reception-dev-cluster" >> $GITHUB_OUTPUT
+              echo "service_name=ai-reception-dev-backend-api-service" >> $GITHUB_OUTPUT
+              echo "container_name=ai-reception-dev-backend-api" >> $GITHUB_OUTPUT
+              echo "Manual deployment to dev environment"
+            fi
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "ecr_repository=ai-reception-dev" >> $GITHUB_OUTPUT
+            echo "cluster_name=ai-reception-dev-cluster" >> $GITHUB_OUTPUT
+            echo "service_name=ai-reception-dev-backend-api-service" >> $GITHUB_OUTPUT
+            echo "container_name=ai-reception-dev-backend-api" >> $GITHUB_OUTPUT
+            echo "Using dev environment as fallback"
+          fi
+
+  build-and-push:
+    needs: determine-environment
+    runs-on: ubuntu-latest
+    outputs:
+      image_uri: ${{ steps.set-image-uri.outputs.image }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ needs.determine-environment.outputs.ecr_repository }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ needs.determine-environment.outputs.ecr_repository }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=image,name=${{ steps.login-ecr.outputs.registry }}/${{ needs.determine-environment.outputs.ecr_repository }},push=true
+
+      - name: Set image URI output
+        id: set-image-uri
+        run: |
+          echo "image=${{ steps.login-ecr.outputs.registry }}/${{ needs.determine-environment.outputs.ecr_repository }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: [determine-environment, build-and-push]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ needs.determine-environment.outputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download current task definition
+        id: download-task-def
+        run: |
+          # Get the current task definition
+          TASK_DEFINITION=$(aws ecs describe-services \
+            --cluster ${{ needs.determine-environment.outputs.cluster_name }} \
+            --services ${{ needs.determine-environment.outputs.service_name }} \
+            --query 'services[0].taskDefinition' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+
+          # Save current task definition for rollback
+          echo "current_task_definition=$TASK_DEFINITION" >> $GITHUB_OUTPUT
+
+          # Download task definition as JSON file
+          aws ecs describe-task-definition \
+            --task-definition $TASK_DEFINITION \
+            --query 'taskDefinition' \
+            --output json > task-definition.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ needs.determine-environment.outputs.container_name }}
+          image: ${{ needs.build-and-push.outputs.image_uri }}
+
+      - name: Deploy Amazon ECS task definition
+        id: deploy-task-def
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ needs.determine-environment.outputs.service_name }}
+          cluster: ${{ needs.determine-environment.outputs.cluster_name }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Starting rollback..."
+          CURRENT_TASK_DEF="${{ steps.download-task-def.outputs.current_task_definition }}"
+
+          aws ecs update-service \
+            --cluster ${{ needs.determine-environment.outputs.cluster_name }} \
+            --service ${{ needs.determine-environment.outputs.service_name }} \
+            --task-definition $CURRENT_TASK_DEF \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+          aws ecs wait services-stable \
+            --cluster ${{ needs.determine-environment.outputs.cluster_name }} \
+            --services ${{ needs.determine-environment.outputs.service_name }} \
+            --region ${{ env.AWS_REGION }}
+
+          echo "Rollback completed"
+
+  notify:
+    needs: [determine-environment, build-and-push, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Deployment notification
+        run: |
+          STATUS="${{ needs.deploy.result == 'success' && 'SUCCESS' || 'FAILED' }}"
+          ENVIRONMENT="${{ needs.determine-environment.outputs.environment }}"
+
+          echo "Deployment Status: $STATUS"
+          echo "Environment: $ENVIRONMENT"
+          echo "Image: ${{ needs.build-and-push.outputs.image_uri }}"
+          echo "Commit: ${{ github.sha }}"
+
+          if [ "${{ needs.deploy.result }}" != "success" ]; then
+            exit 1
+          fi
