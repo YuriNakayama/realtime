@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
-import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
-import { useWebSocket } from '@/hooks/useWebSocket'
-import { useAudioRecording } from '@/hooks/useAudioRecording'
 import { useAudioPlayback } from '@/hooks/useAudioPlayback'
+import { useAudioRecording } from '@/hooks/useAudioRecording'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import type { TranscriptMessage } from '@/types/realtime'
+import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
+import { useCallback, useState } from 'react'
 
 interface TranscriptEntry {
   id: string
@@ -56,7 +56,7 @@ export default function VoiceChat() {
       })
     },
     onError: handleError,
-    autoConnect: true
+    autoConnect: false
   })
 
   // 音声再生フック
@@ -123,6 +123,17 @@ export default function VoiceChat() {
     addTranscript('user', '会話を中断しました。')
   }, [isRecording, playbackState, stopRecording, stopPlayback, interruptConversation, addTranscript])
 
+  // 接続/切断制御
+  const handleConnectionToggle = useCallback(() => {
+    if (connectionStatus === 'connected') {
+      disconnect()
+      addTranscript('user', 'WebSocketから切断しました。')
+    } else if (connectionStatus === 'disconnected' || connectionStatus === 'error') {
+      connect()
+      addTranscript('user', 'WebSocketに接続中...')
+    }
+  }, [connectionStatus, connect, disconnect, addTranscript])
+
   // 接続状態の表示テキスト
   const getConnectionStatusText = () => {
     switch (connectionStatus) {
@@ -152,16 +163,39 @@ export default function VoiceChat() {
         </div>
       )}
 
-      {/* 接続状態表示 */}
+      {/* 接続制御 */}
       <div className="mb-6 p-4 rounded-lg bg-white shadow-sm border">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">接続状態:</span>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${getConnectionStatusColor()}`} />
-            <span className="text-sm text-gray-600">
-              {getConnectionStatusText()}
-            </span>
+          <div className="flex items-center space-x-3">
+            <span className="text-sm font-medium text-gray-700">接続状態:</span>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${getConnectionStatusColor()}`} />
+              <span className="text-sm text-gray-600">
+                {getConnectionStatusText()}
+              </span>
+            </div>
           </div>
+          <button
+            onClick={handleConnectionToggle}
+            className={`btn flex items-center space-x-2 px-4 py-2 text-sm ${
+              connectionStatus === 'connected'
+                ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
+                : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
+            }`}
+            disabled={connectionStatus === 'connecting'}
+          >
+            {connectionStatus === 'connected' ? (
+              <>
+                <span>⚡</span>
+                <span>切断</span>
+              </>
+            ) : (
+              <>
+                <span>🔗</span>
+                <span>接続</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 

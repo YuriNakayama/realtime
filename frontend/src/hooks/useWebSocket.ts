@@ -1,12 +1,12 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
-import type { 
-  WebSocketMessage, 
-  ConnectionStatus,
+import type {
   AudioMessage,
-  TranscriptMessage,
+  ConnectionStatus,
+  ConversationMessage,
   ErrorMessage,
-  ConversationMessage
+  TranscriptMessage,
+  WebSocketMessage
 } from '@/types/realtime';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseWebSocketProps {
   url: string;
@@ -33,7 +33,7 @@ export const useWebSocket = ({
   onAudioDelta,
   onTranscript,
   onError,
-  autoConnect = true
+  autoConnect = false
 }: UseWebSocketProps): UseWebSocketReturn => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
@@ -137,14 +137,6 @@ export const useWebSocket = ({
         console.log('WebSocket disconnected:', event.code, event.reason);
         setConnectionStatus('disconnected');
         wsRef.current = null;
-
-        // 自動再接続（予期しない切断の場合）
-        if (!event.wasClean && autoConnect) {
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting to reconnect...');
-            connect();
-          }, 3000);
-        }
       };
 
     } catch (error) {
