@@ -4,8 +4,7 @@ import { useAudioPlayback } from '@/hooks/useAudioPlayback'
 import { useAudioRecording } from '@/hooks/useAudioRecording'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import type { TranscriptMessage } from '@/types/realtime'
-import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface TranscriptEntry {
   id: string
@@ -14,10 +13,36 @@ interface TranscriptEntry {
   timestamp: Date
 }
 
+// 接続状態を管理する型
+type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'disconnecting'
+
+// ボタンの状態を管理する型
+interface ButtonState {
+  connect: {
+    disabled: boolean
+    text: string
+  }
+  disconnect: {
+    disabled: boolean
+    text: string
+  }
+}
+
+// SSR対応のカスタムフック
+function useSSRSafe() {
+  const [isClient, setIsClient] = useState(false)
+  
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+  
+  return { isClient }
+}
+
 export default function VoiceChat() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
   const [errorMessage, setErrorMessage] = useState<string>('')
-  const [isRecording, setIsRecording] = useState(false)
+  const { isClient } = useSSRSafe()
 
   // エラーハンドラー
   const handleError = useCallback((error: string) => {
@@ -85,54 +110,56 @@ export default function VoiceChat() {
     onError: handleError
   })
 
-  // 録音開始
-  const handleStartRecording = useCallback(async () => {
-    if (connectionStatus !== 'connected') {
-      handleError('WebSocketが接続されていません')
-      return
-    }
-
+  // 接続制御（自動音声録音開始を含む）
+  const handleConnect = useCallback(async () => {
     try {
-      setIsRecording(true)
-      await startRecording()
-      addTranscript('user', '録音を開始しました...')
+      connect()
+      addTranscript('user', 'WebSocketに接続中...')
+      
+      // 接続後に自動で音声録音を開始
+      setTimeout(async () => {
+        if (connectionStatus === 'connected' && isRecordingSupported) {
+          try {
+            await startRecording()
+            addTranscript('user', '音声録音を開始しました。お話しください。')
+          } catch (error) {
+            handleError('音声録音の開始に失敗しました')
+          }
+        }
+      }, 1000) // 接続確立を待つ
     } catch (error) {
-      handleError('録音の開始に失敗しました')
-      setIsRecording(false)
+      handleError('接続に失敗しました')
     }
-  }, [connectionStatus, startRecording, addTranscript, handleError])
+  }, [connect, addTranscript, connectionStatus, isRecordingSupported, startRecording, handleError])
 
-  // 録音停止
-  const handleStopRecording = useCallback(() => {
-    stopRecording()
-    commitAudio() // 音声データのコミット
-    setIsRecording(false)
-    addTranscript('user', '録音を停止しました。応答を待っています...')
-  }, [stopRecording, commitAudio, addTranscript])
-
-  // 会話中断
-  const handleInterrupt = useCallback(() => {
-    if (isRecording) {
+  // 切断制御（音声処理停止を含む）
+  const handleDisconnect = useCallback(() => {
+    // 録音停止
+    if (recordingState === 'recording') {
       stopRecording()
-      setIsRecording(false)
     }
+    // 再生停止
     if (playbackState === 'playing') {
       stopPlayback()
     }
-    interruptConversation()
-    addTranscript('user', '会話を中断しました。')
-  }, [isRecording, playbackState, stopRecording, stopPlayback, interruptConversation, addTranscript])
+    // WebSocket切断
+    disconnect()
+    addTranscript('user', 'WebSocketから切断しました。')
+  }, [recordingState, playbackState, stopRecording, stopPlayback, disconnect, addTranscript])
 
-  // 接続/切断制御
-  const handleConnectionToggle = useCallback(() => {
-    if (connectionStatus === 'connected') {
-      disconnect()
-      addTranscript('user', 'WebSocketから切断しました。')
-    } else if (connectionStatus === 'disconnected' || connectionStatus === 'error') {
-      connect()
-      addTranscript('user', 'WebSocketに接続中...')
+  // ボタン状態の取得
+  const getButtonState = useCallback((connectionState: typeof connectionStatus): ButtonState => {
+    return {
+      connect: {
+        disabled: connectionState === 'connecting' || connectionState === 'connected',
+        text: connectionState === 'connecting' ? '接続中...' : '接続'
+      },
+      disconnect: {
+        disabled: connectionState === 'disconnected' || connectionState === 'connecting',
+        text: connectionState === 'disconnecting' ? '切断中...' : '切断'
+      }
     }
-  }, [connectionStatus, connect, disconnect, addTranscript])
+  }, [])
 
   // 接続状態の表示テキスト
   const getConnectionStatusText = () => {
@@ -154,6 +181,35 @@ export default function VoiceChat() {
     }
   }
 
+  // ボタン状態の取得
+  const buttonState = getButtonState(connectionStatus)
+
+  // SSRセーフなレンダリング
+  if (!isClient) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6 p-4 rounded-lg bg-white shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-sm font-medium text-gray-700">接続状態:</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-gray-500" />
+                <span className="text-sm text-gray-600">読み込み中...</span>
+              </div>
+            </div>
+            <button
+              className="btn flex items-center space-x-2 px-4 py-2 text-sm bg-gray-400 text-white"
+              disabled
+            >
+              <span>🔗</span>
+              <span>読み込み中...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* エラーメッセージ */}
@@ -163,7 +219,7 @@ export default function VoiceChat() {
         </div>
       )}
 
-      {/* 接続制御 */}
+      {/* 簡素化された接続制御 */}
       <div className="mb-6 p-4 rounded-lg bg-white shadow-sm border">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -175,90 +231,34 @@ export default function VoiceChat() {
               </span>
             </div>
           </div>
-          <button
-            onClick={handleConnectionToggle}
-            className={`btn flex items-center space-x-2 px-4 py-2 text-sm ${
-              connectionStatus === 'connected'
-                ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
-                : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
-            }`}
-            disabled={connectionStatus === 'connecting'}
-          >
-            {connectionStatus === 'connected' ? (
-              <>
-                <span>⚡</span>
-                <span>切断</span>
-              </>
-            ) : (
-              <>
-                <span>🔗</span>
-                <span>接続</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* 音声コントロール */}
-      <div className="card mb-6">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-6">音声コントロール</h2>
-          
-          <div className="flex justify-center space-x-4 mb-6">
-            {!isRecording ? (
-              <button
-                onClick={handleStartRecording}
-                className="btn-primary flex items-center space-x-2 px-8 py-4 text-lg"
-                disabled={connectionStatus !== 'connected' || !isRecordingSupported}
-              >
-                <Mic className="w-6 h-6" />
-                <span>話す</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleStopRecording}
-                className="btn-danger flex items-center space-x-2 px-8 py-4 text-lg"
-              >
-                <MicOff className="w-6 h-6" />
-                <span>停止</span>
-              </button>
-            )}
-            
+          <div className="flex space-x-2">
             <button
-              onClick={handleInterrupt}
-              className="btn-secondary flex items-center space-x-2 px-6 py-4"
-              disabled={!isRecording && playbackState !== 'playing'}
+              onClick={handleConnect}
+              className="btn flex items-center space-x-2 px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 disabled:bg-gray-400"
+              disabled={buttonState.connect.disabled}
             >
-              <VolumeX className="w-5 h-5" />
-              <span>中断</span>
+              <span>🔗</span>
+              <span>{buttonState.connect.text}</span>
+            </button>
+            <button
+              onClick={handleDisconnect}
+              className="btn flex items-center space-x-2 px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 disabled:bg-gray-400"
+              disabled={buttonState.disconnect.disabled}
+            >
+              <span>⚡</span>
+              <span>{buttonState.disconnect.text}</span>
             </button>
           </div>
-
-          {/* 録音インジケーター */}
-          {isRecording && (
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="recording-indicator"></div>
-              <span className="text-red-600 font-medium">録音中...</span>
-            </div>
-          )}
-
-          {/* 再生インジケーター */}
-          {playbackState === 'playing' && (
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <Volume2 className="w-5 h-5 text-green-600" />
-              <span className="text-green-600 font-medium">再生中...</span>
-            </div>
-          )}
-
-          {/* サポート状況 */}
-          {!isRecordingSupported && (
-            <div className="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
-              <p className="text-yellow-800 text-sm">
-                このブラウザは音声録音をサポートしていません
-              </p>
-            </div>
-          )}
         </div>
+        
+        {/* 録音サポート警告 */}
+        {!isRecordingSupported && (
+          <div className="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
+            <p className="text-yellow-800 text-sm">
+              このブラウザは音声録音をサポートしていません
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 会話履歴 */}
@@ -290,7 +290,7 @@ export default function VoiceChat() {
             </div>
           ) : (
             <p className="text-gray-500 text-center">
-              「話す」ボタンを押して会話を開始してください
+              「接続」ボタンを押して会話を開始してください
             </p>
           )}
         </div>
