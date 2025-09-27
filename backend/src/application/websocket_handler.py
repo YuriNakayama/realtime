@@ -11,8 +11,8 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+from ..infrastructure.realtime_client import OpenAIRealtimeClient
 from .models import ClientSession, RealtimeMessageType
-from .realtime_client import OpenAIRealtimeClient
 
 logger = logging.getLogger(__name__)
 

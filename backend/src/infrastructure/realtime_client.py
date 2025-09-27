@@ -12,7 +12,7 @@ from typing import Any, AsyncGenerator
 import websockets
 from websockets.exceptions import WebSocketException
 
-from .config import config
+from ..core.config import config
 
 logger = logging.getLogger(__name__)
 
