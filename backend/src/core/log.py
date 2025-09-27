@@ -8,7 +8,6 @@
 import logging
 import sys
 import threading
-from datetime import datetime
 from typing import Any, Dict, Optional
 
 
@@ -151,7 +150,7 @@ def set_log_context(**kwargs: Any) -> None:
     Examples:
         set_log_context(session_id="abc123", client_id="user456")
         set_log_context(additional_data={"operation": "audio_processing"})
-    """
+    """  # noqa: E501
     _context_manager.set_context(**kwargs)
 
 
@@ -222,7 +221,7 @@ def _test_logging():
     # エラーログ
     try:
         raise ValueError("テストエラー")
-    except ValueError as e:
+    except ValueError:
         logger.error("エラーが発生しました", exc_info=True)
 
     # コンテキストマネージャーのテスト

@@ -6,14 +6,13 @@ OpenAI Realtime APIとの直接WebSocket接続を管理し、
 """
 
 import json
-import logging
 from typing import Any, AsyncGenerator
 
 import websockets
 from websockets.exceptions import WebSocketException
 
 from ..core.config import config
-from ..core.log import LogContext, get_logger, set_log_context
+from ..core.log import get_logger
 
 logger = get_logger(__name__)
 

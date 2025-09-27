@@ -9,14 +9,13 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import logging
 import uuid
 from threading import Lock
 from typing import Union
 
 from fastapi import WebSocket
 
-from ..core.log import LogContext, get_logger
+from ..core.log import get_logger
 from .models import ClientSession, SessionConfig
 
 logger = get_logger(__name__)

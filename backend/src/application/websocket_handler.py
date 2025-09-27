@@ -6,12 +6,11 @@ WebSocket接続とメッセージング処理
 
 import asyncio
 import json
-import logging
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from ..core.log import LogContext, clear_log_context, get_logger, set_log_context
+from ..core.log import get_logger
 from ..infrastructure.realtime_client import OpenAIRealtimeClient
 from .models import ClientSession, RealtimeMessageType
 
@@ -46,7 +45,7 @@ async def handle_websocket_connection(
     except WebSocketDisconnect:
         logger.info("クライアント切断")
         raise
-    except Exception as e:
+    except Exception:
         logger.error("WebSocket処理エラー", exc_info=True)
         raise
     finally:

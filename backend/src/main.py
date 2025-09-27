@@ -1,4 +1,3 @@
-import logging
 import uuid
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -8,7 +7,7 @@ from fastapi.responses import JSONResponse
 from .application.models import RealtimeMessageType, SessionConfig
 from .application.session_manager import session_manager
 from .core.config import config
-from .core.log import get_logger, set_log_context, setup_logging
+from .core.log import get_logger, setup_logging
 
 # ロギング設定
 setup_logging(config.LOG_LEVEL.upper())
