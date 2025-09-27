@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 readme = "README.md"
 authors = [{ name = "Yuri Nakayama", email = "yuri620620@gmail.com" }]
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.117.1",
     "uvicorn>=0.36.0",

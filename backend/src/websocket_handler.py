@@ -163,10 +163,14 @@ async def process_openai_message(
 
     if message_type == "response.audio.delta":
         # 音声データをクライアントに送信
+        audio_data = message.get("delta", "")
+        logger.info(
+            f"Sending audio.delta to client: audio_length={len(audio_data)}, session_id={session.session_id}"
+        )
         await websocket.send_json(
             {
                 "type": RealtimeMessageType.AUDIO_DELTA.value,
-                "audio": message.get("delta", ""),
+                "audio": audio_data,
                 "itemId": message.get("item_id"),
                 "sessionId": session.session_id,
             }

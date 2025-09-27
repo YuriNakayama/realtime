@@ -1,5 +1,5 @@
-import { useRef, useCallback, useState } from 'react';
 import type { PlaybackState } from '@/types/realtime';
+import { useCallback, useRef, useState } from 'react';
 
 interface UseAudioPlaybackProps {
   onPlaybackEnd?: () => void;
@@ -69,6 +69,8 @@ export const useAudioPlayback = ({
   }, []);
 
   const playAudio = useCallback(async (base64Audio: string): Promise<void> => {
+    console.log('playAudio called with audio data length:', base64Audio.length);
+    
     if (!isSupported) {
       const errorMsg = 'このブラウザは音声再生をサポートしていません';
       console.error(errorMsg);
@@ -78,31 +80,40 @@ export const useAudioPlayback = ({
 
     if (playbackState === 'playing') {
       // 既に再生中の場合は停止してから新しい音声を再生
+      console.log('Stopping current playback before starting new one');
       stopPlayback();
     }
 
     try {
+      console.log('Setting playback state to playing');
       setPlaybackState('playing');
 
       // AudioContextを初期化（必要に応じて）
       if (!audioContextRef.current) {
+        console.log('Initializing AudioContext');
         const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         audioContextRef.current = new AudioContextClass({
           sampleRate: 16000
         });
+        console.log('AudioContext created with sample rate 16000');
       }
 
       // AudioContextが停止している場合は再開
       if (audioContextRef.current.state === 'suspended') {
+        console.log('Resuming suspended AudioContext');
         await audioContextRef.current.resume();
       }
 
+      console.log('Converting base64 to ArrayBuffer');
       // Base64データをArrayBufferに変換
       const arrayBuffer = base64ToArrayBuffer(base64Audio);
+      console.log('ArrayBuffer created, byteLength:', arrayBuffer.byteLength);
       
+      console.log('Converting PCM16 to AudioBuffer');
       // PCM16データをAudioBufferに変換
       const audioBuffer = await pcm16ToAudioBuffer(arrayBuffer);
       audioBufferRef.current = audioBuffer;
+      console.log('AudioBuffer created - duration:', audioBuffer.duration, 'length:', audioBuffer.length);
 
       // AudioBufferSourceNodeを作成
       const source = audioContextRef.current.createBufferSource();
@@ -121,9 +132,10 @@ export const useAudioPlayback = ({
 
       // AudioContextのdestinationに接続して再生
       source.connect(audioContextRef.current.destination);
+      console.log('Starting audio playback');
       source.start();
 
-      console.log('Audio playback started');
+      console.log('Audio playback started successfully');
 
     } catch (error) {
       console.error('Failed to play audio:', error);

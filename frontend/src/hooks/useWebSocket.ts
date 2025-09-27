@@ -81,7 +81,7 @@ export const useWebSocket = ({
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          console.log('Received message:', message);
+          console.log('WebSocket received message:', message.type, message);
 
           // セッションIDを保存
           if (message.sessionId) {
@@ -91,9 +91,18 @@ export const useWebSocket = ({
           // メッセージタイプ別処理
           switch (message.type) {
             case 'audio.delta':
+              console.log('Processing audio.delta message:', message);
               const audioMsg = message as AudioMessage;
-              if (audioMsg.audio && onAudioDelta) {
-                onAudioDelta(audioMsg.audio);
+              if (audioMsg.audio) {
+                console.log('Audio data found, length:', audioMsg.audio.length);
+                if (onAudioDelta) {
+                  console.log('Calling onAudioDelta with audio data');
+                  onAudioDelta(audioMsg.audio);
+                } else {
+                  console.warn('onAudioDelta callback not provided');
+                }
+              } else {
+                console.warn('No audio data in audio.delta message');
               }
               break;
 

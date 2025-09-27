@@ -14,7 +14,7 @@ export interface AudioMessage extends RealtimeMessage {
 export interface TranscriptMessage extends RealtimeMessage {
   type: 'transcript' | 'transcript.user' | 'transcript.assistant';
   text: string;
-  role?: 'user' | 'assistant';
+  role: 'user' | 'assistant';
   isFinal?: boolean;
 }
 

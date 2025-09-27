@@ -14,7 +14,7 @@ interface TranscriptEntry {
 }
 
 // 接続状態を管理する型
-type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'disconnecting'
+type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 // ボタンの状態を管理する型
 interface ButtonState {
@@ -75,8 +75,10 @@ export default function VoiceChat() {
       addTranscript(transcriptMsg.role, transcriptMsg.text)
     },
     onAudioDelta: (audio: string) => {
+      console.log('VoiceChat: onAudioDelta called with audio length:', audio.length);
       // OpenAIからの音声データを再生
-      playAudio(audio).catch(() => {
+      playAudio(audio).catch((error) => {
+        console.error('VoiceChat: Audio playback failed:', error);
         handleError('音声の再生に失敗しました')
       })
     },
@@ -156,7 +158,7 @@ export default function VoiceChat() {
       },
       disconnect: {
         disabled: connectionState === 'disconnected' || connectionState === 'connecting',
-        text: connectionState === 'disconnecting' ? '切断中...' : '切断'
+        text: '切断'
       }
     }
   }, [])
