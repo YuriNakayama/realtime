@@ -5,9 +5,9 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .config import config
-from .models import RealtimeMessageType, SessionConfig
-from .session_manager import session_manager
+from .application.models import RealtimeMessageType, SessionConfig
+from .application.session_manager import session_manager
+from .core.config import config
 
 # ロギング設定
 logging.basicConfig(level=logging.INFO)
@@ -67,7 +67,7 @@ async def websocket_realtime(websocket: WebSocket) -> None:
 
     try:
         # WebSocketハンドラーを呼び出し（後で実装）
-        from .websocket_handler import handle_websocket_connection
+        from .application.websocket_handler import handle_websocket_connection
 
         await handle_websocket_connection(websocket, session)
 
