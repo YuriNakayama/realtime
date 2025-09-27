@@ -13,8 +13,9 @@ import websockets
 from websockets.exceptions import WebSocketException
 
 from ..core.config import config
+from ..core.log import LogContext, get_logger, set_log_context
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class OpenAIRealtimeClient:

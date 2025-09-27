@@ -11,10 +11,11 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+from ..core.log import LogContext, clear_log_context, get_logger, set_log_context
 from ..infrastructure.realtime_client import OpenAIRealtimeClient
 from .models import ClientSession, RealtimeMessageType
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 async def handle_websocket_connection(
@@ -34,7 +35,7 @@ async def handle_websocket_connection(
         realtime_client = OpenAIRealtimeClient(session_id=session.session_id)
         await realtime_client.connect()
 
-        logger.info(f"OpenAI Realtime API接続完了: session_id={session.session_id}")
+        logger.info("OpenAI Realtime API接続完了")
 
         # 双方向メッセージング処理を開始
         await asyncio.gather(
@@ -43,16 +44,16 @@ async def handle_websocket_connection(
         )
 
     except WebSocketDisconnect:
-        logger.info(f"クライアント切断: session_id={session.session_id}")
+        logger.info("クライアント切断")
         raise
     except Exception as e:
-        logger.error(f"WebSocket処理エラー: {e}")
+        logger.error("WebSocket処理エラー", exc_info=True)
         raise
     finally:
         # OpenAI接続のクリーンアップ
         if realtime_client:
             await realtime_client.disconnect()
-            logger.info(f"OpenAI Realtime API切断完了: session_id={session.session_id}")
+            logger.info("OpenAI Realtime API切断完了")
 
 
 async def handle_client_messages(
@@ -81,9 +82,7 @@ async def handle_client_messages(
                 )
 
     except WebSocketDisconnect:
-        logger.info(
-            f"クライアントからのメッセージ受信終了: session_id={session.session_id}"
-        )
+        logger.info("クライアントからのメッセージ受信終了")
         raise
 
 
@@ -142,7 +141,7 @@ async def process_client_message(
         session_config = data.get("session", {})
         if session_config:
             await realtime_client.update_session(session_config)
-        logger.info(f"セッション初期化メッセージ受信: session_id={session.session_id}")
+        logger.info("セッション初期化メッセージ受信")
 
     else:
         logger.warning(f"未知のメッセージタイプ: {message_type}")

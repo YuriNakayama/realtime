@@ -8,10 +8,11 @@ from fastapi.responses import JSONResponse
 from .application.models import RealtimeMessageType, SessionConfig
 from .application.session_manager import session_manager
 from .core.config import config
+from .core.log import get_logger, set_log_context, setup_logging
 
 # ロギング設定
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+setup_logging(config.LOG_LEVEL.upper())
+logger = get_logger(__name__)
 
 app = FastAPI(
     title="OpenAI Realtime API Server",

@@ -16,9 +16,10 @@ from typing import Union
 
 from fastapi import WebSocket
 
+from ..core.log import LogContext, get_logger
 from .models import ClientSession, SessionConfig
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SessionManager:
