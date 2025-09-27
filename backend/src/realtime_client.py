@@ -5,7 +5,6 @@ OpenAI Realtime APIとの直接WebSocket接続を管理し、
 音声データの送受信とセッション管理を行う。
 """
 
-import asyncio
 import json
 import logging
 from typing import Any, AsyncGenerator
@@ -84,11 +83,11 @@ class OpenAIRealtimeClient:
             if "401" in error_message or "Unauthorized" in error_message:
                 logger.error(f"OpenAI API認証エラー: {e}")
                 self.is_connected = False
-                raise ConnectionError(f"OpenAI API authentication failed: {e}")  # noqa: B904
+                raise ConnectionError(f"OpenAI API authentication failed: {e}") from e
             elif "Connection" in error_message:
                 logger.error(f"OpenAI API接続エラー: {e}")
                 self.is_connected = False
-                raise ConnectionError(f"OpenAI API connection failed: {e}")
+                raise ConnectionError(f"OpenAI API connection failed: {e}") from e
             else:
                 logger.error(f"OpenAI Realtime API接続エラー: {e}")
                 logger.error(f"接続URL: {self.api_url}")

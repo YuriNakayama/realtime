@@ -201,7 +201,7 @@ class RealtimeMessageType(Enum):
     AUDIO_COMMIT = "audio.commit"
     CONVERSATION_INTERRUPT = "conversation.interrupt"
     SESSION_UPDATE = "session.update"
-    
+
     # サーバー → クライアント
     CONNECTION_ESTABLISHED = "connection.established"
     AUDIO_DELTA = "audio.delta"
