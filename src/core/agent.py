@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import numpy as np
@@ -40,8 +41,8 @@ class SimpleAgent:
         self.config = RealtimeModelConfig(
             api_key=api_key,
             initial_model_settings={
-                "input_audio_format": "g711_ulaw",
-                "output_audio_format": "g711_ulaw",
+                "input_audio_format": "pcm16",
+                "output_audio_format": "pcm16",
                 "turn_detection": {
                     "type": "semantic_vad",
                     "interrupt_response": True,
@@ -51,33 +52,71 @@ class SimpleAgent:
             playback_tracker=RealtimePlaybackTracker(),
         )
 
+        # セッションを初期化時に作成し、再利用する
+        self.runner = None
+        self.session = None
+
+    async def _initialize_session(self):
+        """セッションを初期化する"""
+        if self.runner is None:
+            self.runner = RealtimeRunner(starting_agent=self.agent)
+
+        if self.session is None:
+            self.session = await self.runner.run(model_config=self.config)
+
     async def __call__(self, audio: npt.NDArray[np.int16]) -> npt.NDArray[np.int16]:
         try:
-            runner = RealtimeRunner(
-                starting_agent=self.agent,
-            )
+            if len(audio) == 0:
+                return audio
 
-            session = await runner.run(model_config=self.config)
+            # セッションが初期化されていない場合は初期化
+            await self._initialize_session()
+
             response_audio = np.array([], dtype=np.int16)
 
-            async with session:
-                await session.send_audio(audio)
+            # タイムアウト付きでセッション処理を実行
+            try:
+                async with asyncio.timeout(10.0):  # 10秒のタイムアウト
+                    await self.session.send_audio(audio)
 
-                async for event in session:
-                    if event.type == "audio":
-                        if hasattr(event, "audio") and event.audio is not None:
-                            response_audio = np.concatenate(
-                                (response_audio, event.audio)
+                    event_count = 0
+                    max_events = 100  # 最大イベント数制限
+
+                    async for event in self.session:
+                        event_count += 1
+
+                        if event.type == "audio":
+                            if hasattr(event, "audio") and event.audio is not None:
+                                response_audio = np.concatenate(
+                                    (response_audio, event.audio)
+                                )
+                        elif event.type == "audio_end":
+                            break
+                        elif event.type == "error":
+                            logger.error(
+                                f"SimpleAgent: RealtimeAgent error - {event.error}"
                             )
-                    elif event.type == "audio_end":
-                        break
-                    elif event.type == "error":
-                        logger.error(f"RealtimeAgent error: {event.error}")
-                        break
+                            break
+                        elif event.type == "response.done":
+                            break
+
+                        # 無限ループ防止
+                        if event_count >= max_events:
+                            break
+
+            except asyncio.TimeoutError:
+                logger.warning("SimpleAgent: タイムアウトが発生しました")
+
+            # レスポンスが空の場合は元の音声を返す
+            if len(response_audio) == 0:
+                return audio
 
             return response_audio
 
         except Exception as e:
+            import traceback
+
             logger.error(f"SimpleAgent error: {e}")
+            logger.error(f"SimpleAgent traceback: {traceback.format_exc()}")
             # エラー時は元の音声をそのまま返す
             return audio
