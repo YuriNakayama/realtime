@@ -2,16 +2,14 @@
 
 ## 基本情報
 
-- **プロジェクト**: AI窓口（AI Reception）
-- **目的**: OpenAI Realtime APIを使用したリアルタイム音声対話・受付システム
-- **構成**: フロントエンドにはUIに集中し、バックエンドのみにビジネスロジックと外部APIとの連携を実装
+- **プロジェクト**: temp_fastapi
+- **目的**: リアルタイムAI音声処理アプリケーションの検証
+- **構成**: 検証が高速で回せるように、シンプルな構成を採用
 
 ## 技術スタック
 
-- **フロントエンド**: Next.js 15.4+, React 19, TypeScript 5+, Tailwind CSS 4, AWS Amplify
 - **バックエンド**: Python 3.12, FastAPI 0.104+, WebSockets, Uvicorn
-- **インフラ**: AWS (ECS Fargate, ALB, ECR, Amplify), Terraform, Docker
-- **パッケージ管理**: UV (Python), npm (Node.js)
+- **パッケージ管理**: UV (Python)
 
 ## フォルダ構造
 
