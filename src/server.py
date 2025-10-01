@@ -2,7 +2,8 @@ from openai import audio
 import numpy as np
 import uvicorn
 from fastapi import FastAPI, WebSocket
-from audio_service import AudioService
+from .audio_service import AudioService
+from .agent import TestAgent
 
 
 
@@ -16,7 +17,7 @@ async def get():
 
 @app.websocket("/realtime")
 async def websocket_endpoint(websocket: WebSocket) -> None:
-    audio_service = AudioService(websocket)
+    audio_service = AudioService(websocket, agent=TestAgent())
     await audio_service()
 
 if __name__ == "__main__":
