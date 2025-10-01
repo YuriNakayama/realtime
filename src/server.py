@@ -2,7 +2,7 @@ from openai import audio
 import numpy as np
 import uvicorn
 from fastapi import FastAPI, WebSocket
-from .service.audio_service import AudioService
+from .service.audio import AudioService
 from .core.agent import TestAgent
 
 
