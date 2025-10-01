@@ -2,6 +2,9 @@ import numpy as np
 from fastapi import WebSocket
 
 from src.core.agent import SimpleAgent, TestAgent
+from src.core.log import get_logger
+
+logger = get_logger(__name__)
 
 
 class AudioService:
@@ -11,7 +14,7 @@ class AudioService:
 
     async def onopen(self) -> None:
         await self.websocket.accept()
-        print("WebSocket接続が確立されました")
+        logger.info("WebSocket接続が確立されました")
 
     async def process_audio(self) -> None:
         try:
@@ -21,9 +24,9 @@ class AudioService:
                 processed_audio = await self.agent(audio_data)
                 await self.websocket.send_bytes(processed_audio.tobytes())
         except Exception as e:
-            print(f"エラーが発生しました: {e}")
+            logger.error(e)
         finally:
-            print("WebSocket接続が閉じられました")
+            logger.info("WebSocket接続が閉じられました")
 
     async def __call__(self) -> None:
         await self.onopen()

@@ -11,6 +11,10 @@ from agents.realtime import (
 )
 from dotenv import load_dotenv
 
+from src.core.log import get_logger
+
+logger = get_logger(__name__)
+
 
 class TestAgent:
     def __init__(self):
@@ -23,7 +27,7 @@ class TestAgent:
 class SimpleAgent:
     def __init__(self):
         if not load_dotenv():
-            print("No .env file found")
+            logger.error("No .env file found")
 
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key is None:

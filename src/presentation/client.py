@@ -1,8 +1,12 @@
 import asyncio
-
-from pyaudio import PyAudio, paInt16
-import websockets
 from dataclasses import dataclass
+
+import websockets
+from pyaudio import PyAudio, paInt16
+
+from src.core.log import get_logger
+
+logger = get_logger(__name__)
 
 
 async def send_and_receive_audio(websocket, input_stream, output_stream, chunk) -> None:
@@ -21,7 +25,8 @@ async def send_and_receive_audio(websocket, input_stream, output_stream, chunk) 
             output_stream.write(processed_audio)
 
     except Exception as e:
-        print(f"エラー: {e}")
+        logger.error(f"エラー: {e}")
+
 
 @dataclass
 class AudioConfig:
@@ -36,18 +41,31 @@ async def main(url: str) -> None:
     p = PyAudio()
     # ストリームを開く（マイク入力用）
     input_stream = p.open(
-        format=config.format, channels=config.channels, rate=config.rate, input=True, frames_per_buffer=config.chunk
+        format=config.format,
+        channels=config.channels,
+        rate=config.rate,
+        input=True,
+        frames_per_buffer=config.chunk,
     )
 
     # ストリームを開く（再生用）
     output_stream = p.open(
-        format=config.format, channels=config.channels, rate=config.rate, output=True, frames_per_buffer=config.chunk
+        format=config.format,
+        channels=config.channels,
+        rate=config.rate,
+        output=True,
+        frames_per_buffer=config.chunk,
     )
 
-    print(f"WebSocketサーバーに接続を試行中: {url}")
+    logger.info(f"WebSocketサーバーに接続を試行中: {url}")
     async with websockets.connect(url) as websocket:
-        print("WebSocket接続が成功しました")
-        await send_and_receive_audio(websocket, input_stream=input_stream, output_stream=output_stream, chunk=config.chunk)
+        logger.info("WebSocket接続が成功しました")
+        await send_and_receive_audio(
+            websocket,
+            input_stream=input_stream,
+            output_stream=output_stream,
+            chunk=config.chunk,
+        )
 
 
 if __name__ == "__main__":
@@ -57,4 +75,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main(WS_SERVER_URL))
     except Exception as e:
-        print(f"メインエラー: {e}")
+        logger.error(e)
