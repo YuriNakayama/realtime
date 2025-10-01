@@ -16,22 +16,7 @@
 ## フォルダ構造
 
 ```plaintext
-/
-├── frontend/           # Next.js
-│   └── src/
-│       ├── app/        # Next.js App Router
-│       ├── components/ # React コンポーネント
-│       ├── hooks/      # カスタムフック
-│       └── lib/        # ユーティリティ
-├── backend/            # FastAPI
-│   └── src/
-│       ├── main.py     # メインアプリケーション
-│       ├── core/       # 共通機能
-│       └── reception/  # 受付機能
-├── infra/              # Terraform IaC
-│   ├── environments/   # 環境別設定
-│   └── modules/        # モジュール
-└── docs/              # ドキュメント
+
 ```
 
 ## 開発手順
