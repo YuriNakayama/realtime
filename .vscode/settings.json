@@ -17,11 +17,9 @@
     "github.copilot.enable": {
         "markdown": true
     },
-    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "python.analysis.extraPaths": [
-        "backend/src",
-        "backend/tests",
-        "${workspaceFolder}/backend/.venv/lib/python3.12/site-packages",
+        "${workspaceFolder}/.venv/lib/python3.12/site-packages",
     ],
     "python.analysis.diagnosticsSource": "Pylance",
     "python.analysis.typeCheckingMode": "basic",
