@@ -8,6 +8,7 @@ from agents.realtime import (
     RealtimeModelConfig,
     RealtimePlaybackTracker,
     RealtimeRunner,
+    RealtimeSession,
 )
 from dotenv import load_dotenv
 
@@ -53,8 +54,8 @@ class SimpleAgent:
         )
 
         # セッションを初期化時に作成し、再利用する
-        self.runner = None
-        self.session = None
+        self.runner: RealtimeRunner = None
+        self.session: RealtimeSession = None
 
     async def _initialize_session(self):
         """セッションを初期化する"""
@@ -79,12 +80,8 @@ class SimpleAgent:
                 async with asyncio.timeout(10.0):  # 10秒のタイムアウト
                     await self.session.send_audio(audio)
 
-                    event_count = 0
-                    max_events = 100  # 最大イベント数制限
-
                     async for event in self.session:
-                        event_count += 1
-
+                        logger.info(f"SimpleAgent: Received event - {event}")
                         if event.type == "audio":
                             if hasattr(event, "audio") and event.audio is not None:
                                 response_audio = np.concatenate(
@@ -98,10 +95,6 @@ class SimpleAgent:
                             )
                             break
                         elif event.type == "response.done":
-                            break
-
-                        # 無限ループ防止
-                        if event_count >= max_events:
                             break
 
             except asyncio.TimeoutError:
