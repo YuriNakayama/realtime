@@ -1,3 +1,5 @@
+import traceback
+
 import numpy as np
 from fastapi import WebSocket
 
@@ -23,8 +25,8 @@ class AudioService:
                 audio_data = np.frombuffer(data, dtype=np.int16)
                 processed_audio = await self.agent(audio_data)
                 await self.websocket.send_bytes(processed_audio.tobytes())
-        except Exception as e:
-            logger.error(e)
+        except Exception:
+            logger.error(traceback.format_exc())
         finally:
             logger.info("WebSocket接続が閉じられました")
 
