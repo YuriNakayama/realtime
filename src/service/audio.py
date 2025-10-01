@@ -17,7 +17,7 @@ class AudioService:
             while True:
                 data = await self.websocket.receive_bytes()
                 audio_data = np.frombuffer(data, dtype=np.int16)
-                processed_audio = self.agent(audio_data)
+                processed_audio = await self.agent(audio_data)
                 await self.websocket.send_bytes(processed_audio.tobytes())
         except Exception as e:
             print(f"エラーが発生しました: {e}")
