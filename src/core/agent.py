@@ -1,8 +1,7 @@
-from openai import audio
-import numpy as np
-import numpy.typing as npt
 import os
 
+import numpy as np
+import numpy.typing as npt
 from agents.realtime import (
     RealtimeAgent,
     RealtimeModelConfig,
@@ -13,16 +12,15 @@ from agents.realtime import (
 from dotenv import load_dotenv
 
 
-
 class TestAgent:
     def __init__(self):
         pass
 
     async def __call__(self, audio: npt.NDArray[np.int16]) -> npt.NDArray[np.int16]:
         return audio * 2  # 例: 音量を2倍にする
-    
 
-class RealtimeAgent:
+
+class SimpleAgent:
     def __init__(self):
         if not load_dotenv():
             print("No .env file found")
@@ -30,10 +28,9 @@ class RealtimeAgent:
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key is None:
             raise ValueError("No OPENAI_API_KEY found in environment variables")
-        
+
         self.agent = RealtimeAgent(
-            name="Test Agent",
-            instructions="すべての語尾に!!!をつけて話してください。"
+            name="Test Agent", instructions="すべての語尾に!!!をつけて話してください。"
         )
         self.config = RealtimeModelConfig(
             api_key=api_key,

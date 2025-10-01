@@ -1,10 +1,11 @@
 import numpy as np
 from fastapi import WebSocket
 
-from src.core.agent import TestAgent
+from src.core.agent import SimpleAgent, TestAgent
+
 
 class AudioService:
-    def __init__(self, websocket: WebSocket, agent: TestAgent) -> None:
+    def __init__(self, websocket: WebSocket, agent: SimpleAgent) -> None:
         self.websocket = websocket
         self.agent = agent
 
