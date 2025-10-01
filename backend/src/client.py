@@ -1,12 +1,10 @@
 import asyncio
-import threading
 
-import numpy as np
 import pyaudio
 import websockets
 
 # WebSocketサーバーのURL
-WS_SERVER_URL = "ws://localhost:8000/ws"
+WS_SERVER_URL = "ws://localhost:8000/realtime"
 
 # オーディオ設定
 FORMAT = pyaudio.paInt16
@@ -64,17 +62,17 @@ async def main():
         await send_and_receive_audio(websocket)
 
 
-def cleanup_audio():
+def cleanup_audio() -> None:
     """音声リソースのクリーンアップ"""
     try:
-        if input_stream and not input_stream._stream is None:
+        if input_stream and input_stream._stream is not None:
             input_stream.stop_stream()
             input_stream.close()
     except Exception as e:
         print(f"入力ストリーム終了エラー: {e}")
 
     try:
-        if output_stream and not output_stream._stream is None:
+        if output_stream and output_stream._stream is not None:
             output_stream.stop_stream()
             output_stream.close()
     except Exception as e:
