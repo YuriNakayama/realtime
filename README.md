@@ -21,11 +21,11 @@ ipython kernel install --user --name=temp_fastapi
 ### サーバーの起動
 
 ```bash
-uv run uvicorn src.server:app
+uv run uvicorn src.presentation.server:app
 ```
 
 ### クライアントの起動
 
 ```bash
-uv run python src/client.py
+uv run python src/presentation/client.py
 ```
