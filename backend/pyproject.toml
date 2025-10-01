@@ -7,13 +7,14 @@ authors = [{ name = "Yuri Nakayama", email = "yuri620620@gmail.com" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.117.1",
-    "uvicorn>=0.36.0",
+    "uvicorn[standard]>=0.36.0",
     "websockets>=15.0.1",
     "python-dotenv>=1.0.0",
     "httpx>=0.27.0",
     "pydantic>=2.0.0",
     "numpy>=1.24.0",
     "scipy>=1.10.0",
+    "openai-agents[real-time]>=0.3.3",
 ]
 
 [tool.hatch.build.targets.wheel]
