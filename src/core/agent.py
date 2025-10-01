@@ -7,7 +7,6 @@ from agents.realtime import (
     RealtimeModelConfig,
     RealtimePlaybackTracker,
     RealtimeRunner,
-    RealtimeSession,
 )
 from dotenv import load_dotenv
 
@@ -34,8 +33,10 @@ class SimpleAgent:
             raise ValueError("No OPENAI_API_KEY found in environment variables")
 
         self.agent = RealtimeAgent(
-            name="Test Agent", instructions="すべての語尾に!!!をつけて話してください。"
+            name="Assistant",
+            instructions="すべての語尾に「わ〜」をつけて話してください。",  # noqa: E501
         )
+
         self.config = RealtimeModelConfig(
             api_key=api_key,
             initial_model_settings={
@@ -51,11 +52,32 @@ class SimpleAgent:
         )
 
     async def __call__(self, audio: npt.NDArray[np.int16]) -> npt.NDArray[np.int16]:
-        runner = RealtimeRunner(self.agent)
-        async with await runner.run(model_config=self.config) as session:
-            await session.send_audio(audio)
+        try:
+            runner = RealtimeRunner(
+                starting_agent=self.agent,
+            )
+
+            session = await runner.run(model_config=self.config)
             response_audio = np.array([], dtype=np.int16)
-            async for event in session:
-                if isinstance(event, RealtimeSession.AudioEvent):
-                    response_audio = np.concatenate((response_audio, event.audio))
+
+            async with session:
+                await session.send_audio(audio)
+
+                async for event in session:
+                    if event.type == "audio":
+                        if hasattr(event, "audio") and event.audio is not None:
+                            response_audio = np.concatenate(
+                                (response_audio, event.audio)
+                            )
+                    elif event.type == "audio_end":
+                        break
+                    elif event.type == "error":
+                        logger.error(f"RealtimeAgent error: {event.error}")
+                        break
+
             return response_audio
+
+        except Exception as e:
+            logger.error(f"SimpleAgent error: {e}")
+            # エラー時は元の音声をそのまま返す
+            return audio
