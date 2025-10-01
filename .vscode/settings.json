@@ -32,12 +32,12 @@
     },
     "github.copilot.chat.commitMessageGeneration.instructions": [
         {
-            "file": ".github/instructions/copilot-commit-message-instructions.md"
+            "file": ".github/instructions/copilot-commit-message.instructions.md"
         },
     ],
     "github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
         {
-            "file": ".github/instructions/pull-request-description-instructions.md"
+            "file": ".github/instructions/pull-request-description.instructions.md"
         }
     ]
 }
