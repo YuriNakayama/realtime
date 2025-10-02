@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["src", "experiment"]
 
 [build-system]
 requires = ["hatchling"]
