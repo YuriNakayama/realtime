@@ -34,8 +34,7 @@ def get_logger(name: str, log_file: str) -> Logger:
     # ファイルハンドラーの設定
     # ログファイルのディレクトリを作成
     log_path = Path(log_file)
-    log_dir = log_path.parent
-    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
 
     # ローテーティングファイルハンドラーの作成
     file_handler = RotatingFileHandler(
