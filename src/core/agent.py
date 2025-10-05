@@ -113,7 +113,6 @@ class SimpleAgent:
                                 f"SimpleAgent: RealtimeAgent error - {event.error}"
                             )
                             break
-                        # response.doneのイベントタイプチェックを削除（比較オーバーラップエラー回避）
 
             except asyncio.TimeoutError:
                 logger.warning("SimpleAgent: タイムアウトが発生しました")
