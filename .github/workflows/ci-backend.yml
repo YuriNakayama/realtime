@@ -3,7 +3,7 @@ name: CI Backend
 on:
   pull_request:
     paths:
-      - "backend/**"
+      - "**"
       - ".github/workflows/ci-backend.yml"
     types:
       - opened
@@ -25,10 +25,10 @@ jobs:
           path: |
             ~/.cache/uv
             ~/.local/share/uv
-            backend/.mypy_cache
-            backend/.pytest_cache
-            backend/.ruff_cache
-          key: ${{ runner.os }}-tools-${{ hashFiles('backend/uv.lock', 'backend/pyproject.toml') }}
+            .mypy_cache
+            .pytest_cache
+            .ruff_cache
+          key: ${{ runner.os }}-tools-${{ hashFiles('uv.lock', 'pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-tools-
 
@@ -37,17 +37,22 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install system dependencies for PyAudio
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev
+
       - name: Install the project
-        run: cd backend && uv sync --locked --all-extras --dev
+        run: uv sync --locked --all-extras --dev
 
       - name: Run Ruff (format check)
-        run: cd backend && uv run ruff format --check .
+        run: uv run ruff format --check .
 
       - name: Run Ruff (lint)
-        run: cd backend && uv run ruff check --output-format=github .
+        run: uv run ruff check --output-format=github .
 
     #   - name: Run MyPy (type check)
-    #     run: cd backend && uv run mypy --config-file pyproject.toml .
+    #     run: uv run mypy --config-file pyproject.toml .
 
     #   - name: Run tests
-    #     run: cd backend && uv run pytest tests
+    #     run: uv run pytest tests
