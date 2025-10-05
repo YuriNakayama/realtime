@@ -1,9 +1,7 @@
-import numpy as np
 import uvicorn
 from fastapi import FastAPI, WebSocket
-from openai import audio
 
-from src.core.agent import SimpleAgent, TestAgent
+from src.core.agent import SimpleAgent
 from src.service.audio import AudioService
 
 app = FastAPI()

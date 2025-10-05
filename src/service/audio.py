@@ -3,7 +3,7 @@ import traceback
 import numpy as np
 from fastapi import WebSocket
 
-from src.core.agent import SimpleAgent, TestAgent
+from src.core.agent import SimpleAgent
 from src.core.log import get_logger
 
 logger = get_logger(__name__)
@@ -33,7 +33,7 @@ class AudioService:
                 logger.info("AudioService: エージェント処理開始...")
                 processed_audio = await self.agent(audio_data)
                 logger.info(
-                    f"AudioService: エージェント処理完了 - {len(processed_audio)} samples"
+                    f"AudioService: エージェント処理完了 - {len(processed_audio)} samples"  # noqa: E501
                 )
 
                 await self.websocket.send_bytes(processed_audio.tobytes())
