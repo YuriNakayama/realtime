@@ -18,10 +18,11 @@
 
 ```python
 # src/core/interfaces.py
-from typing import Any
+from typing import Any, Callable, AsyncIterator
 from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
+import asyncio
 
 @dataclass
 class ServiceConfig:
@@ -40,6 +41,7 @@ class RealtimeService:
         self.instruction: str = self.config.initial_instruction
         self.orchestrator = orchestrator
         self.realtime_client = self._initialize_client()
+        self.orchestrator.set_callback(self._on_orchestrator_complete)
     
     def _initialize_client(self) -> RealtimeClient:
         """クライアントの初期化"""
@@ -51,19 +53,23 @@ class RealtimeService:
     
     async def process(
         self, 
-        input_data: npt.NDArray[np.int16] | str
-    ) -> npt.NDArray[np.int16] | str:
-        """音声処理のメインメソッド"""
-        # Orchestratorがルーティングを判断
-        result = await self.orchestrator.invoke({
+        input_data: npt.NDArray[np.int16]
+    ) -> AsyncIterator[npt.NDArray[np.int16]]:
+        """音声処理のメインメソッド（非同期ストリーム）"""
+        # Orchestratorを非同期で起動（完了を待たない）
+        asyncio.create_task(self.orchestrator.invoke({
             "input": input_data,
             "agent_type": self.config.agent_type
-        })
+        }))
         
-        # 該当するクライアントで処理
-        if result.get("use_realtime"):
-            return await self.realtime_client.send_request(input_data)
-        return result.get("output", "")
+        # すぐにRealtimeクライアントでの処理を開始
+        async for response in self.realtime_client.send_request(input_data):
+            yield response
+    
+    async def _on_orchestrator_complete(self, result: dict[str, Any]) -> None:
+        """Orchestrator完了時のコールバック"""
+        if new_instruction := result.get("instruction_update"):
+            await self.update_instructions(new_instruction)
     
     async def update_instructions(self, instructions: str) -> None:
         """プロンプトの動的更新"""
@@ -79,15 +85,27 @@ class RealtimeService:
 
 ```python
 from abc import ABC, abstractmethod
-from typing import Any, Protocol
+from typing import Any, Protocol, Callable
 
 class AbstractOrchestrator(ABC):
     """LangGraphベースのマルチエージェント管理インターフェース"""
+    
+    def __init__(self):
+        self._callback: Callable[[dict[str, Any]], None] | None = None
     
     @abstractmethod
     async def invoke(self, input_data: dict[str, Any]) -> dict[str, Any]:
         """LangGraphのグラフ実行"""
         pass
+    
+    def set_callback(self, callback: Callable[[dict[str, Any]], None]) -> None:
+        """完了時のコールバック設定"""
+        self._callback = callback
+    
+    async def _notify_completion(self, result: dict[str, Any]) -> None:
+        """完了通知"""
+        if self._callback:
+            await self._callback(result)
 
 
 ```
@@ -106,7 +124,7 @@ class RealtimeClient:
             instructions=instructions
         )
         self.runner = RealtimeRunner(self.agent)
-        self.session = None
+        self.session: RealtimeSession | None = None
         self.api_key = api_key
     
     async def connect(self) -> None:
@@ -138,11 +156,25 @@ class RealtimeClient:
         """インストラクションの更新"""
         self.agent.instructions = instructions
         # 必要に応じてセッションの再構築
+        if self.session:
+            await self.disconnect()
+            await self.connect()
+
 
 class AbstractChatClient(ABC):
     """外部APIクライアントの基本インターフェース"""
+    
+    @abstractmethod
+    async def chat(self, message: str) -> str:
+        """メッセージ送信の抽象メソッド"""
+        pass
 
 
-class ChatClient(AbstractChatClient):
+class OpenAIChatClient(AbstractChatClient):
     """OpenAI Chat APIを使用したエージェント実装"""
+    
+    async def chat(self, message: str) -> str:
+        """メッセージ送信の実装"""
+        # 具象実装は後で行う
+        pass
 ```
