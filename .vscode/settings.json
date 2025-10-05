@@ -17,11 +17,9 @@
     "github.copilot.enable": {
         "markdown": true
     },
-    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "python.analysis.extraPaths": [
-        "backend/src",
-        "backend/tests",
-        "${workspaceFolder}/backend/.venv/lib/python3.12/site-packages",
+        "${workspaceFolder}/.venv/lib/python3.12/site-packages",
     ],
     "python.analysis.diagnosticsSource": "Pylance",
     "python.analysis.typeCheckingMode": "basic",
@@ -32,12 +30,12 @@
     },
     "github.copilot.chat.commitMessageGeneration.instructions": [
         {
-            "file": ".github/instructions/copilot-commit-message-instructions.md"
-        },
+            "file": ".github/instructions/commit-message.instructions.md"
+        }
     ],
     "github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
         {
-            "file": ".github/instructions/pull-request-description-instructions.md"
+            "file": ".github/instructions/pull-request-description.instructions.md"
         }
     ]
 }
