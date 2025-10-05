@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import dataclass
+from typing import Any
 
 import websockets
 from pyaudio import PyAudio, paInt16
@@ -9,7 +10,9 @@ from src.core.log import get_logger
 logger = get_logger(__name__)
 
 
-async def send_and_receive_audio(websocket, input_stream, output_stream, chunk) -> None:
+async def send_and_receive_audio(
+    websocket: Any, input_stream: Any, output_stream: Any, chunk: int
+) -> None:
     try:
         while True:
             # マイクから音声データを取得（バッファオーバーフロー対策）

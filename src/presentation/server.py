@@ -1,20 +1,20 @@
 import uvicorn
 from fastapi import FastAPI, WebSocket
 
-from src.core.agent import SimpleAgent
+from src.core.agent import TestAgent
 from src.service.audio import AudioService
 
 app = FastAPI()
 
 
 @app.get("/")
-async def get():
+async def get() -> dict[str, str]:
     return {"message": "Hello, World!"}
 
 
 @app.websocket("/realtime")
 async def websocket_endpoint(websocket: WebSocket) -> None:
-    audio_service = AudioService(websocket, agent=SimpleAgent())
+    audio_service = AudioService(websocket, agent=TestAgent())
     await audio_service()
 
 
