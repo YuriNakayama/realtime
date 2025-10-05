@@ -72,19 +72,6 @@ class AbstractOrchestrator(ABC):
         """適切なエージェントへのルーティング"""
         pass
 
-
-class AbstractAgent(ABC):
-    """エージェントの基本インターフェース"""
-    name: str
-    
-    @abstractmethod
-    async def chat(
-        self, 
-        input_data: str,
-    ) -> str:
-        """エージェントのメイン処理"""
-        pass
-
 ```
 
 ### 3. infrastructureレイヤ
