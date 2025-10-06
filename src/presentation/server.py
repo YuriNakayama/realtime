@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, WebSocket
 
-from src.core.agent import TestAgent
+from src.domain.agent import TestAgent
 from src.service.audio import AudioService
 
 app = FastAPI()

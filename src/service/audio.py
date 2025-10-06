@@ -3,8 +3,8 @@ import traceback
 import numpy as np
 from fastapi import WebSocket
 
-from src.core.agent import TestAgent
-from src.core.log import get_logger
+from src.domain.agent import TestAgent
+from src.domain.log import get_logger
 
 logger = get_logger(__name__)
 

@@ -5,7 +5,7 @@ from typing import Any
 import websockets
 from pyaudio import PyAudio, paInt16
 
-from src.core.log import get_logger
+from src.domain.log import get_logger
 
 logger = get_logger(__name__)
 
