@@ -19,7 +19,7 @@ orchestratorはLangGraphの使用を想定しますが、ここではインタ�
 ### 1. serviceレイヤ
 
 ```python
-# src/core/interfaces.py
+# src/domain/interfaces.py
 from typing import Any, Callable, AsyncIterator
 from dataclasses import dataclass
 import numpy as np
